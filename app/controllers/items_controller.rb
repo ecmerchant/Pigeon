@@ -123,39 +123,50 @@ class ItemsController < ApplicationController
 
                 title = doc.xpath('//h1[@property="auction:Title"]')[0].text
                 title = "[終了したオークション]" + title
-                auctionID = doc.xpath('//td[@property="auction:AuctionID"]')[0].text
-                condition = doc.xpath('//td[@property="auction:ItemStatus"]')[0].text
-                binPrice = ""
-                checkTax = doc.xpath('//p[@class="decTxtTaxIncPrice"]')[0].text
-                logger.debug(url)
-                if checkTax.index("税0円") != nil then
 
-                  listPrice = doc.xpath('//p[@class="decTxtBuyPrice"]')[0]
-                  if listPrice != nil then
-                    listPrice = doc.xpath('//p[@class="decTxtBuyPrice"]')[0].text
-                  else
-                    listPrice = doc.xpath('//p[@class="decTxtAucPrice"]')[0].text
-                  end
-                  listPrice = CCur(listPrice)
+                auctionID = doc.xpath('//td[@property="auction:AuctionID"]')[0]
+                if auctionID != nil then
+                  auctionID = auctionID.text
+                end
+                condition = doc.xpath('//td[@property="auction:ItemStatus"]')[0]
+                if condition != nil then
+                  condition = condition.text
+                end
+
+                binPrice = ""
+                checkTax = doc.xpath('//p[@class="decTxtTaxIncPrice"]')[0]
+                if checkTax != nil then
+                  checkTax = checkTax.text
+                end
+
+                logger.debug(url)
+
+                listPrice = doc.xpath('//p[@class="decTxtBuyPrice Price__value"]')[0]
+                if listPrice != nil then
+                  listPrice = doc.xpath('//p[@class="decTxtBuyPrice Price__value"]')[0].text
                 else
-                  listPrice = doc.xpath('//p[@class="decTxtBuyPrice"]')[0]
-                  if listPrice != nil then
-                    listPrice = doc.xpath('//p[@class="decTxtBuyPrice"]')[0].text
-                  else
-                    listPrice = doc.xpath('//p[@class="decTxtAucPrice"]')[0].text
+                  listPrice = doc.xpath('//p[@class="decTxtAucPrice Price__value"]')[0].text
+                end
+                listPrice = CCur(listPrice)
+                if listPrice != nil then
+                  if listPrice.include?("%") then
+                    listPrice = /^([\s\S]*?)\s/.match(listPrice)[1]
                   end
-                  listPrice = CCur(listPrice)
                 end
                 binPrice = 0
-                bitnum = doc.xpath('//b[@property="auction:Bids"]')[0].text
+                bitnum = doc.xpath('//b[@property="auction:Bids"]')[0]
+                if bitnum != nil then
+                  bitnum = bitnum.text
+                end
+
                 restTime = "終了"
                 k = 0
-
-                images = doc.xpath('//li[@title=""]//img')
-
                 image = []
-                while k < images.length
-                  image[k] = images[k].attribute("src").value
+                while k < 3
+                  images = doc.xpath('//img[@id="imgsrc' + (k+1).to_s + '"]')
+                  if images[0] != nil then
+                    image[k] = images[0].attribute("src").value
+                  end
                   k += 1
                 end
               end
@@ -174,6 +185,7 @@ class ItemsController < ApplicationController
                 k += 1
               end
             end
+            title = title.gsub("\t", "")
 
             res[i] = [url,title,auctionID,listPrice,binPrice,condition,bitnum,restTime,image[0],image[1],image[2]]
 
